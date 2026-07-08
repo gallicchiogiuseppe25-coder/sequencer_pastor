@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>placeholder_sequencer_casa_pastor</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#100e0c" />
+
+<!-- iOS PWA support -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="placeholder_sequencer_casa_pastor" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+  :root {
+    --color-void: #100e0c;       /* sfondo — ombra */
+    --color-void-soft: #1c1815;  /* superfici leggermente sollevate */
+    --color-glow: #e2a35f;       /* accento per l'atmosfera dei punti */
+    --color-glow-dim: #7a5738;   /* variante smorzata */
+    --color-text: #EF670A;       /* colore unico di tutti i testi */
+
+    --font-family: 'Consolas', 'Source Code Pro', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--color-void);
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+  }
+
+  #stage {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  #cameraVideo {
+    display: none;
+  }
+
+  #viewCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* --- Etichetta di stato ------------------------------------------ */
+
+  #statusLabel {
+    position: fixed;
+    top: env(safe-area-inset-top, 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-family);
+    font-size: 10.5px;
+    font-weight: 400;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    background: rgba(16, 14, 12, 0.55);
+    border: 1px solid rgba(226, 163, 95, 0.18);
+    padding: 6px 14px;
+    border-radius: 999px;
+    z-index: 5;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+  }
+
+  /* --- Schermata iniziale ------------------------------------------- */
+
+  #startOverlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    background: var(--color-void);
+    color: var(--color-text);
+    text-align: center;
+    padding: 32px;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  #startAtmosphere {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .atmosphere-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--color-glow);
+    opacity: 0.12;
+    animation-name: atmosphere-breathe;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes atmosphere-breathe {
+    0%, 100% { opacity: 0.06; }
+    50% { opacity: 0.32; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .atmosphere-dot { animation: none; }
+  }
+
+  .start-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    max-width: 92vw;
+  }
+
+  .start-title {
+    font-family: var(--font-family);
+    font-size: clamp(18px, 6.5vw, 34px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--color-text);
+    white-space: nowrap;
+  }
+
+  /* Visibile solo in caso di errore (es. permesso camera negato). */
+  .start-error {
+    font-family: var(--font-family);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--color-text);
+    min-height: 0;
+  }
+
+  .start-error:empty {
+    display: none;
+  }
+
+  /* Rettangolo con angoli smussati, nessuna campitura: solo outline arancione. */
+  #startButton {
+    margin-top: 8px;
+    padding: 14px 48px;
+    border-radius: 10px;
+    border: 2px solid var(--color-text);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-family);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  #startButton:active {
+    transform: scale(0.96);
+  }
+
+  #startButton:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 4px;
+  }
+
+  #startButton:disabled {
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <video id="cameraVideo" playsinline muted autoplay></video>
+  <canvas id="viewCanvas"></canvas>
+</div>
+
+<div id="statusLabel">in attesa</div>
+
+<div id="startOverlay">
+  <div id="startAtmosphere"></div>
+  <div class="start-content">
+    <h1 class="start-title">placeholder_sequencer_casa_pastor</h1>
+    <button id="startButton">Inizia</button>
+    <p class="start-error" id="startError"></p>
+  </div>
+</div>
+
+<!-- Moduli caricati in ordine di dipendenza. -->
+<script src="camera.js"></script>
+<script src="vision/gridDetector.js"></script>
+<script src="vision/pixelDetector.js"></script>
+<script src="vision/colorExtractor.js"></script>
+<script src="sampling/pixelSampler.js"></script>
+<script src="audio/soundEngine.js"></script>
+<script src="audio/synthModes/harmonicField.js"></script>
+<script src="audio/synthModes/spectralTranslation.js"></script>
+<script src="audio/synthModes/rhythmicEmission.js"></script>
+<script src="audio/synthModes/colorSynthesis.js"></script>
+<script src="audio/synthModes/lightShadow.js"></script>
+<script src="audio/synthModes/sequencer.js"></script>
+<script src="ui/overlay.js"></script>
+<script src="ui/startAtmosphere.js"></script>
+<script src="state/confidenceState.js"></script>
+<script src="main.js"></script>
+<script>
+  window.StartAtmosphere.init(document.getElementById('startAtmosphere'));
+</script>
+
+</body>
+</html>

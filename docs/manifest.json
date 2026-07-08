@@ -1,0 +1,12 @@
+{
+  "name": "placeholder_sequencer_casa_pastor",
+  "short_name": "placeholder_sequencer_casa_pastor",
+  "description": "Sonificazione in tempo reale di una stampa fisica a pixel 3x3mm",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#100e0c",
+  "theme_color": "#100e0c",
+  "icons": []
+}
